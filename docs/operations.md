@@ -73,3 +73,51 @@ Missing/incompatible model: startup fails; health never becomes ready. Rebuild w
 the verified serving requirements and a trusted model. Invalid requests: HTTP 422
 with field locations/messages. Repeated 5xx: inspect container logs and roll back to
 a known image. Never load an untrusted joblib file; loading it can execute code.
+
+## Local MLflow (phase 6)
+
+Use a separate environment for tracking when serving dependency isolation is required.
+From the repository root, activate the environment and run:
+
+```powershell
+python -m pip install -e '.[tracking]'
+./scripts/start_mlflow.ps1
+```
+
+Open http://127.0.0.1:5000. Metadata persists in `.mlflow/tracking.db` and
+proxied artifacts in `.mlflow/artifacts`, both ignored by Git. Stop with Ctrl+C
+and run the same command from the repository root to restart. Back up both together.
+This follows the [MLflow tracking server documentation](https://mlflow.org/docs/latest/self-hosting/architecture/tracking-server/).
+
+In another terminal with the same environment activated:
+
+```powershell
+python scripts/build_model.py --output-dir models/phase-6-demo --tracking-uri http://127.0.0.1:5000
+```
+
+The `frozen-phase-3-reproduction` experiment records configuration, threshold,
+validation metrics including confusion counts, eligible row counts, raw input file
+hashes, runtime versions, Git commit and dirty status, artifact hashes, and copies
+of the model and report. These are reproductions, not fresh model-selection or
+holdout evidence. The Parquet reader excludes incidents on or after July 1, 2024;
+input file hashes identify the original files without evaluating holdout rows.
+The frozen recipe and threshold remain unchanged. Existing output directories must
+be empty. An explicitly requested tracking failure exits nonzero after preserving
+the completed local artifacts. Omitting `--tracking-uri` does not import MLflow.
+
+For an automated Windows integration check (use a fresh output path):
+
+```powershell
+python scripts/verify_tracking.py --output-dir models/phase-6-verification
+```
+
+This starts a loopback server on 5056, checks run completeness and the UI response,
+restarts with the same SQLite/artifact stores, downloads both files and compares
+SHA-256 hashes, then serves the downloaded model on 8056 and runs the HTTP smoke
+test. It stops its child processes and writes `tracking-verification.json` locally.
+The script requires these ports to be free. To inspect the retained run, restart
+`./scripts/start_mlflow.ps1 -Port 5056`.
+
+Serving still uses an explicit file via `MODEL_PATH`; downloading does not promote
+or replace the existing serving model. No Model Registry is used. The Docker image
+and CI install serving dependencies without the tracking extra.

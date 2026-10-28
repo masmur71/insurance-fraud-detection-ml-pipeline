@@ -12,3 +12,7 @@ data/generator_config.json
 models/
 reports/
 .env
+.mlflow/
+mlruns/
+mlartifacts/
+mlflow.db*

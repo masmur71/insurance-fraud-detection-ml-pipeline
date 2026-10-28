@@ -31,10 +31,11 @@ def past_count(frame, entity, days=None):
     return result
 
 
-def assemble(data_dir):
+def assemble(data_dir, *, before=None):
     """Read raw tables only; analysis/truth tables are intentionally never opened."""
     data_dir = Path(data_dir)
-    claims = pd.read_parquet(data_dir / "claims.parquet")
+    options = {} if before is None else {"filters": [("incident_date", "<", before)]}
+    claims = pd.read_parquet(data_dir / "claims.parquet", **options)
     if len(claims.drop_duplicates()) != claims.claim_id.nunique():
         raise ValueError("Conflicting claim duplicates")
     frame = claims.drop_duplicates("claim_id", keep="first").copy()

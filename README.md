@@ -167,3 +167,8 @@ compose.yaml          Local deployment
 - The local demo has no authentication, public ingress, or production monitoring stack. Only trusted joblib artifacts may be loaded.
 
 The next steps for real deployment are suitable data access, label-maturity validation, subgroup assessment, calibration, and capacity-aware review operations—not further optimization on this consumed synthetic test set.
+
+## Local experiment tracking
+
+Install the optional tracking extra with `python -m pip install -e '.[tracking]'`.
+See [the operations guide](docs/operations.md#local-mlflow-phase-6) for startup, frozen builds, artifact verification, and recovery. Serving does not require MLflow.

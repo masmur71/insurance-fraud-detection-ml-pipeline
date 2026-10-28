@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = ["numpy>=1.26,<3", "pandas>=2.2,<3", "pyarrow>=15,<24", "scikit-learn>=1.4,<2", "joblib>=1.4,<2", "threadpoolctl>=3.5,<4", "fastapi==0.162.0", "pydantic==2.14.1", "uvicorn>=0.29,<1"]
 
 [project.optional-dependencies]
+tracking = ["mlflow>=3.1,<4"]
 dev = ["pytest>=8,<10", "httpx2", "ruff>=0.6,<1"]
 data = ["matplotlib>=3.9,<4", "seaborn>=0.13,<1", "ipython>=8,<10"]
 
