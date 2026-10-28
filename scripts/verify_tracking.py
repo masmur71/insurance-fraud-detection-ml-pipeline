@@ -49,7 +49,7 @@ def main():
                             str(args.output_dir), "--tracking-uri", uri], cwd=ROOT,
                            env=env, check=True)
             client = MlflowClient(tracking_uri=uri)
-            experiment = client.get_experiment_by_name("frozen-phase-3-reproduction")
+            experiment = client.get_experiment_by_name("frozen-model-reproduction")
             run = client.search_runs([experiment.experiment_id], order_by=["start_time DESC"])[0]
             assert run.info.status == "FINISHED"
             assert len(run.data.params) == 17, run.data.params

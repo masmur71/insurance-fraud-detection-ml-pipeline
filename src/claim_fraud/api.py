@@ -58,7 +58,7 @@ def reason_codes(claim):
 def create_app(model_path=None):
     @asynccontextmanager
     async def lifespan(app):
-        path = Path(model_path or os.environ.get("MODEL_PATH", "models/phase-3/model.joblib"))
+        path = Path(model_path or os.environ.get("MODEL_PATH", "models/frozen-model/model.joblib"))
         app.state.bundle = load_bundle(path)
         reference = app.state.bundle["metadata"].get("selected", {}).get(
             "validation", {}).get("review_fraction", 0.05)

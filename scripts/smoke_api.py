@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://127.0.0.1:8000")
-    parser.add_argument("--model", type=Path, default=ROOT / "models/phase-3/model.joblib")
+    parser.add_argument("--model", type=Path, default=ROOT / "models/frozen-model/model.joblib")
     args = parser.parse_args()
     bundle = joblib.load(args.model)
     with urlopen(args.url + "/health", timeout=10) as response:

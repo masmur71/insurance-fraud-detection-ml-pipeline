@@ -149,7 +149,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", choices=("tune", "evaluate"))
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
-    parser.add_argument("--output-dir", type=Path, default=Path("models/phase-3"))
+    parser.add_argument("--output-dir", type=Path, default=Path("models/model-selection"))
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if (args.output_dir / "test-report.json").exists():

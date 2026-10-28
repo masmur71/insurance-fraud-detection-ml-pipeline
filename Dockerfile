@@ -11,7 +11,7 @@ COPY requirements-serving.txt ./
 RUN pip install --no-cache-dir -r requirements-serving.txt \
     && groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app
 COPY src/ ./src/
-COPY models/phase-3/model.joblib ./models/model.joblib
+COPY models/frozen-model/model.joblib ./models/model.joblib
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

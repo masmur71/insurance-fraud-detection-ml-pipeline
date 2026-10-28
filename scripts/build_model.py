@@ -25,9 +25,9 @@ CONFIG = {"max_leaf_nodes": 7, "max_iter": 100, "l2_regularization": 10.0,
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, default=ROOT / "data")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "models/phase-3")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "models/frozen-model")
     parser.add_argument("--tracking-uri", help="Explicit HTTP MLflow server; omitted disables tracking")
-    parser.add_argument("--experiment-name", default="frozen-phase-3-reproduction")
+    parser.add_argument("--experiment-name", default="frozen-model-reproduction")
     args = parser.parse_args()
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         raise FileExistsError("Model output must be empty; preserve the original frozen experiment")
@@ -47,7 +47,7 @@ def main():
               "sklearn": sklearn.__version__, "python": platform.python_version(),
               "input_columns": model.named_steps["features"].input_columns_,
               "data_sha256": data_hashes(args.data_dir),
-              "recipe": "Frozen phase 3 demographic boosting; no test evaluation or retuning",
+              "recipe": "Frozen demographic boosting; no test evaluation or retuning",
               "selected": {"config": CONFIG, "validation": validation}, "threshold": THRESHOLD}
     args.output_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump({"pipeline": model, "threshold": THRESHOLD, "metadata": report},

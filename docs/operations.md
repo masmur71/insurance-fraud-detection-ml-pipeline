@@ -1,5 +1,13 @@
 # Deployment and monitoring
 
+## Local input drift
+
+Build an aggregate training reference and compare local Parquet claim batches
+using [the drift guide](data-drift.md). Run `python scripts/demo_drift.py` for a
+training-only demonstration, then open the generated HTML locally. Use fresh
+output folders. No fitting, holdout evaluation, automatic retraining or threshold
+change occurs. Reports remain on disk; API request payloads are not collected.
+
 ## Batch prediction
 
 ```powershell
@@ -20,8 +28,10 @@ and artifact. See [batch behavior and measured results](batch-prediction.md).
 
 ## Release path
 
-The GitHub Actions workflow tests Python 3.11, generates synthetic raw data, audits
-it, builds the frozen model recipe, builds the Docker image, and checks HTTP/pipeline
+The GitHub Actions workflow tests Python 3.11, generates synthetic raw data,
+builds the frozen model recipe,
+verifies drift reports using eligible training and controlled fixtures,
+builds the Docker image, and checks HTTP/pipeline
 parity. Pull requests run checks without publication. Successful `main` runs publish
 the tested image to `ghcr.io/masmur71/insurance-fraud-detection-ml-pipeline` with both
 the full commit SHA and `latest`. No cloud hosting or paid service is required.
@@ -113,7 +123,7 @@ In another terminal with the same environment activated:
 python scripts/build_model.py --output-dir models/tracking-demo --tracking-uri http://127.0.0.1:5000
 ```
 
-The `frozen-phase-3-reproduction` experiment records configuration, threshold,
+The `frozen-model-reproduction` experiment records configuration, threshold,
 validation metrics including confusion counts, eligible row counts, raw input file
 hashes, runtime versions, Git commit and dirty status, artifact hashes, and copies
 of the model and report. These are reproductions, not fresh model-selection or

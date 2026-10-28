@@ -20,6 +20,7 @@ Results on this dataset do not show how well the model would detect real fraud. 
 - Submit 1-100 claims together and receive results in the same order.
 - View basic service health and prediction summaries.
 - Track model builds locally with the optional MLflow tools.
+- Compare new batches with training data using local JSON and HTML drift reports.
 - Run automated checks and package the API as a Docker image.
 
 ## Run locally
@@ -135,10 +136,27 @@ The smoke check covers individual and batch predictions. It needs the same model
 
 Optional MLflow tracking records how a model was built and keeps a copy of its model file and report. See the [setup instructions](docs/operations.md#local-mlflow). MLflow is not needed to serve predictions.
 
+## Check changes in input data
+
+With raw training data and the frozen model already available:
+
+```powershell
+.venv/Scripts/python.exe scripts/demo_drift.py
+Start-Process reports/drift-demo/controlled-shift/drift-report.html
+```
+
+This creates a training reference and compares identical inputs with controlled
+synthetic changes. It reads no consumed holdout rows. The JSON and standalone HTML
+show changes in missing values, numeric averages, and category frequencies.
+Fewer than 100 rows produce statistics without an overall drift conclusion.
+Flags prompt investigation; they do not prove accuracy loss or trigger retraining.
+See [local drift reports](docs/data-drift.md) to analyze your own Parquet batch.
+
 ## Further reading
 
 - [Operations guide](docs/operations.md): Docker, deployment, monitoring, and MLflow setup.
 - [Batch API and benchmark](docs/batch-prediction.md): batch behavior and measured performance.
+- [Local data drift](docs/data-drift.md): training reference, reports, and interpretation.
 - [Model card](docs/model-card.md): intended use, results, and limitations.
 - [Feature contract](docs/feature-contract.md): expected inputs and history rules.
 
