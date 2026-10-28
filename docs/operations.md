@@ -1,5 +1,23 @@
 # Deployment and monitoring
 
+## Batch prediction
+
+```powershell
+$claim = Get-Content examples/claim.json -Raw | ConvertFrom-Json
+$body = @{ claims = @($claim, $claim) } | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/predict/batch -ContentType 'application/json' -Body $body
+python scripts/benchmark_batch.py --url http://127.0.0.1:8000 --size 100 --repeats 10
+```
+
+The synchronous endpoint accepts 1-100 claims and returns predictions in order.
+Any invalid item rejects the whole request with HTTP 422 and an indexed error;
+there are no partial predictions. OpenAPI documents the limits. Batch requests
+increment the HTTP counter once and successful prediction counters per claim.
+The benchmark writes `reports/batch-benchmark.json`, including model hash, raw
+round times, median latency, and aggregate throughput. It uses synthetic example
+inputs and performs no holdout evaluation. Run both modes against the same server
+and artifact. See [batch behavior and measured results](phase-7-batch.md).
+
 ## Release path
 
 The GitHub Actions workflow tests Python 3.11, generates synthetic raw data, audits

@@ -84,3 +84,13 @@ class PredictionResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     model_version: str
+
+
+class BatchClaimRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    claims: Annotated[list[ClaimRequest], Field(min_length=1, max_length=100,
+                                               description="Between 1 and 100 claims, in order")]
+
+
+class BatchPredictionResponse(BaseModel):
+    predictions: list[PredictionResponse]

@@ -31,15 +31,26 @@ def main():
                          "incident_type": "unseen-category", "claim_amount": None},
                {**original, "report_date": "2025-01-09", "annual_premium": 0}]
     with threadpool_limits(limits=1):
+        individual = []
         for payload in samples:
             request = Request(args.url + "/predict", data=json.dumps(payload).encode(),
                               headers={"Content-Type": "application/json"})
             with urlopen(request, timeout=10) as response:
                 result = json.load(response)
+            individual.append(result)
             expected = bundle["pipeline"].predict_proba(pd.DataFrame([payload]))[0, 1]
             np.testing.assert_allclose(result["score"], expected, rtol=1e-12, atol=1e-12)
             assert result["threshold"] == bundle["threshold"]
             assert result["review_required"] == (expected >= bundle["threshold"])
+    request = Request(args.url + "/predict/batch", data=json.dumps({"claims": samples}).encode(),
+                      headers={"Content-Type": "application/json"})
+    with urlopen(request, timeout=10) as response:
+        predictions = json.load(response)["predictions"]
+    assert len(predictions) == len(individual)
+    for actual, expected in zip(predictions, individual):
+        np.testing.assert_allclose(actual["score"], expected["score"], rtol=0, atol=1e-12)
+        assert {k: v for k, v in actual.items() if k != "score"} == {
+            k: v for k, v in expected.items() if k != "score"}
     invalid = Request(args.url + "/predict", data=json.dumps({**original, "true_fraud": 1}).encode(),
                       headers={"Content-Type": "application/json"})
     try:
@@ -48,7 +59,7 @@ def main():
         assert exc.code == 422
     else:
         raise AssertionError("Leakage field was accepted")
-    print("Health, three frozen-model prediction parity cases, and input rejection passed.")
+    print("Health, single/batch frozen-model parity, and input rejection passed.")
 
 
 if __name__ == "__main__":

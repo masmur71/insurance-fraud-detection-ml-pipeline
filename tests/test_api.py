@@ -109,6 +109,59 @@ class APITests(unittest.TestCase):
                 ValueError, "threshold"), TestClient(create_app(self.path)):
             pass
 
+    def test_batch_sizes_parity_order_and_single_inference_call(self):
+        variants = [self.payload, {**self.payload, "age": None, "claim_amount": None,
+                                  "occupation_group": None, "incident_type": "unseen"},
+                    {**self.payload, "report_date": "2025-01-09",
+                     "police_report_filed": 0, "claim_amount": 200000000}]
+        with TestClient(create_app(self.path)) as client:
+            expected = [client.post("/predict", json=item).json() for item in variants]
+            for size in (1, 3, 100):
+                claims = [variants[i % 3] for i in range(size)]
+                pipeline = client.app.state.bundle["pipeline"]
+                with patch.object(pipeline, "predict_proba", wraps=pipeline.predict_proba) as score:
+                    response = client.post("/predict/batch", json={"claims": claims})
+                    self.assertEqual(response.status_code, 200, response.text)
+                    score.assert_called_once()
+                    self.assertEqual(len(score.call_args.args[0]), size)
+                for i, actual in enumerate(response.json()["predictions"]):
+                    reference = expected[i % 3]
+                    self.assertAlmostEqual(actual["score"], reference["score"], delta=1e-12)
+                    self.assertEqual({k: v for k, v in actual.items() if k != "score"},
+                                     {k: v for k, v in reference.items() if k != "score"})
+
+    def test_batch_validation_is_atomic_and_indexed(self):
+        with TestClient(create_app(self.path)) as client:
+            for claims in ([], [self.payload] * 101,
+                           [self.payload, {**self.payload, "age": 121}]):
+                response = client.post("/predict/batch", json={"claims": claims})
+                self.assertEqual(response.status_code, 422)
+            self.assertIn(["body", "claims", 1, "age"],
+                          [error["loc"] for error in response.json()["detail"]])
+            self.assertEqual(client.app.state.monitor.snapshot()["predictions"], 0)
+            self.assertEqual(client.app.state.monitor.requests[("/predict/batch", 422)], 3)
+            schema = client.get("/openapi.json").json()["components"]["schemas"]
+            field = schema["BatchClaimRequest"]["properties"]["claims"]
+            self.assertEqual((field["minItems"], field["maxItems"]), (1, 100))
+
+    def test_batch_counts_requests_and_claims_and_rejects_invalid_model_scores_atomically(self):
+        with TestClient(create_app(self.path), raise_server_exceptions=False) as client:
+            pipeline = client.app.state.bundle["pipeline"]
+            with patch.object(pipeline, "predict_proba", return_value=np.array(
+                    [[0.5, 0.5], [0.8, 0.2]])):
+                response = client.post("/predict/batch", json={"claims": [self.payload] * 2})
+            self.assertEqual(response.status_code, 200)
+            snapshot = client.app.state.monitor.snapshot()
+            self.assertEqual(snapshot["predictions"], 2)
+            self.assertEqual(snapshot["review_fraction"], 0.5)
+            self.assertEqual(client.app.state.monitor.requests[("/predict/batch", 200)], 1)
+            for bad_score in (float("nan"), float("inf"), -0.1, 1.1):
+                with patch.object(pipeline, "predict_proba", return_value=np.array(
+                        [[0.5, 0.5], [0.0, bad_score]])):
+                    response = client.post("/predict/batch", json={"claims": [self.payload] * 2})
+                self.assertEqual(response.status_code, 500)
+                self.assertEqual(client.app.state.monitor.snapshot()["predictions"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

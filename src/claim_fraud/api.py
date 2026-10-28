@@ -18,7 +18,8 @@ from sklearn.exceptions import InconsistentVersionWarning
 from threadpoolctl import threadpool_limits
 
 from .monitoring import Monitor
-from .schemas import ClaimRequest, HealthResponse, PredictionResponse
+from .schemas import (BatchClaimRequest, BatchPredictionResponse, ClaimRequest,
+                      HealthResponse, PredictionResponse)
 
 
 def load_bundle(path):
@@ -82,7 +83,9 @@ def create_app(model_path=None):
             return response
         finally:
             path = request.url.path
-            route = path if path in {"/predict", "/health", "/metrics", "/monitoring"} else "other"
+            route = path if path in {
+                "/predict", "/predict/batch", "/health", "/metrics", "/monitoring"
+            } else "other"
             app.state.monitor.observe_request(route, status, time.perf_counter() - start)
 
     @app.get("/metrics", response_class=PlainTextResponse)
@@ -105,19 +108,29 @@ def create_app(model_path=None):
     def health():
         return HealthResponse(model_version=app.state.bundle["model_version"])
 
+    def infer(claims):
+        bundle = app.state.bundle
+        frame = pd.DataFrame([claim.model_dump() for claim in claims])
+        scores = bundle["pipeline"].predict_proba(frame)[:, 1]
+        if len(scores) != len(claims) or any(
+                not math.isfinite(score) or not 0 <= score <= 1 for score in scores):
+            raise RuntimeError("Model returned invalid scores")
+        predictions = [PredictionResponse(
+            score=float(score), threshold=bundle["threshold"],
+            review_required=bool(score >= bundle["threshold"]), reason_codes=reason_codes(claim),
+            model_version=bundle["model_version"]) for claim, score in zip(claims, scores)]
+        for prediction in predictions:
+            app.state.monitor.observe_prediction(
+                prediction.score, prediction.review_required, prediction.model_version)
+        return predictions
+
     @app.post("/predict", response_model=PredictionResponse)
     def predict(claim: ClaimRequest):
-        bundle = app.state.bundle
-        frame = pd.DataFrame([claim.model_dump()])
-        score = float(bundle["pipeline"].predict_proba(frame)[0, 1])
-        if not math.isfinite(score) or not 0 <= score <= 1:
-            raise RuntimeError("Model returned an invalid score")
-        app.state.monitor.observe_prediction(score, score >= bundle["threshold"],
-                                             bundle["model_version"])
-        return PredictionResponse(score=score, threshold=bundle["threshold"],
-                                  review_required=score >= bundle["threshold"],
-                                  reason_codes=reason_codes(claim),
-                                  model_version=bundle["model_version"])
+        return infer([claim])[0]
+
+    @app.post("/predict/batch", response_model=BatchPredictionResponse)
+    def predict_batch(batch: BatchClaimRequest):
+        return BatchPredictionResponse(predictions=infer(batch.claims))
 
     return app
 

@@ -15,6 +15,8 @@ An end-to-end machine learning service that prioritizes vehicle insurance claims
 - **Operational evaluation:** models compete on recall under a 5% validation review budget. Model and thresholds are frozen before holdout evaluation.
 - **Shared training and serving:** one serialized preprocessing/model pipeline handles missing values, unseen categories, clipping, and derived features.
 - **Delivery:** behavioral tests, a non-root Python 3.11 container, CI-gated image publication, HTTP parity checks, and bounded runtime telemetry.
+- **Batch scoring:** synchronous `/predict/batch` for 1-100 claims, ordered responses,
+  complete-request validation, and shared vectorized inference with `/predict`.
 
 ```mermaid
 flowchart LR
