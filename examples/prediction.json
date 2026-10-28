@@ -1,0 +1,10 @@
+{
+  "score": 0.008114595800479574,
+  "threshold": 0.08607093703233727,
+  "review_required": false,
+  "reason_codes": [],
+  "model_version": "df51b29e695a231799e4fe29443c47016c5360135f397287e2da41e41f136306",
+  "score_kind": "uncalibrated_model_score",
+  "dataset": "synthetic data",
+  "seed": 20261028
+}

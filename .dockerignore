@@ -1,0 +1,9 @@
+**
+!Dockerfile
+!requirements-serving.txt
+!src/
+!src/claim_fraud/
+!src/claim_fraud/*.py
+!models/
+!models/phase-3/
+!models/phase-3/model.joblib
