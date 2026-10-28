@@ -1,13 +1,14 @@
-# Phase 4 API and container verification
+# API and container verification
 
-Status: complete on 2026-10-28 under the user-approved criteria below.
+Original single-claim API and container verification: 2026-10-28.
+See [batch prediction](batch-prediction.md) for the batch endpoint.
 
-## Scope and acceptance
+## Verification criteria
 
 FastAPI `/predict` and `/health`, Pydantic input validation, behavioral HTTP tests,
-and a Docker image using Python 3.11. Closure criteria confirmed by the user:
+and a Docker image using Python 3.11. Verification criteria:
 all tests pass on Python 3.11, the container is healthy, and HTTP scores match the
-frozen pipeline. Phase 3 is archived; its holdout was not evaluated again.
+frozen pipeline. The consumed holdout was not evaluated again.
 
 ## Implementation
 
@@ -51,7 +52,7 @@ The older logistic baseline emits SciPy optimizer deprecation warnings in Python
 tests, without failures. Windows sandbox networking prevents TestClient's event loop
 from opening its internal socket; running those tests outside the sandbox succeeds.
 
-## Remaining limitations and next phase
+## Limitations
 
 All model results concern **synthetic data**, seed `20261028`. The model is uncalibrated,
 uses demographic features, and assumes label availability without maturity timestamps.
@@ -59,6 +60,5 @@ The test review rate is 7.43%, not a guaranteed 5% operational queue.
 Python 3.11 inference and behavioral tests are verified; full-data training was run
 on Python 3.13 and was not repeated after holdout evaluation.
 
-Phase 5 covers CI/CD, deployment, request/monitoring metrics, model card, and demo polish.
-This is a local MVP; authentication, rate limiting, and operational monitoring are
-not provided by this phase. No deployment or Git commit was performed.
+See the [operations guide](operations.md) for CI/CD, local deployment, and monitoring.
+The local service has no authentication or rate limiting.

@@ -1,4 +1,4 @@
-"""Repository-local entry point for phase 3 tuning and frozen evaluation."""
+"""Repository-local entry point for historical model selection and frozen evaluation."""
 import sys
 from pathlib import Path
 

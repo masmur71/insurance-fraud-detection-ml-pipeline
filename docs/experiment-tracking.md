@@ -1,6 +1,6 @@
-# Phase 6 verification
+# Experiment tracking verification
 
-Verified locally on 2026-10-29; phases 7-8 remain unimplemented.
+Local tracking and artifact persistence verified on 2026-10-29.
 
 - Frozen recipe and threshold `0.08607093703233727` preserved; training uses
   78,352 eligible rows and validation uses 14,600. No holdout scoring or tuning.
@@ -21,4 +21,4 @@ Verified locally on 2026-10-29; phases 7-8 remain unimplemented.
   exclusion, and preservation of completed artifacts on tracking failure.
 
 Restart with `./scripts/start_mlflow.ps1 -Port 5058` to inspect the retained run.
-See [operations](operations.md#local-mlflow-phase-6) for reproduction commands.
+See [operations](operations.md#local-mlflow) for reproduction commands.

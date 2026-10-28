@@ -1,6 +1,6 @@
-# Phase 3 model comparison and error analysis
+# Model selection and error analysis
 
-All results: **synthetic data**, seed `20261028`. Phase 3 was closed by the user on 2026-10-28.
+All results: **synthetic data**, seed `20261028`. The model and threshold were frozen on 2026-10-28.
 Runtime: Python 3.13.0, scikit-learn 1.6.1. Python 3.11 runtime verification remains pending.
 
 ## Protocol
@@ -92,13 +92,15 @@ Eleven behavioral tests pass, including train/validation isolation, threshold re
 data-change and repeated-evaluation guards, unseen demographics, missing values,
 and serialization parity. Full-data tuning and one holdout evaluation completed.
 The saved full-data model reproduces validation metrics exactly and passes reload parity.
-Changed Python sources parse using Python 3.11 grammar, but that runtime is not installed.
-Ruff is unavailable. Windows joblib emitted a physical-core detection warning and used
+The original run checked Python 3.11 syntax; subsequent CI verifies that runtime
+and runs Ruff checks. Windows joblib emitted a physical-core detection warning and used
 logical-core detection; execution completed with numerical threads limited to two.
 
 Local excluded artifacts: `models/phase-3/model.joblib`, `selection.json`, `test-report.json`.
 Raw-input SHA-256 hashes are saved in selection metadata; the test report records the model hash.
-Reproduce commands are in README. Artifacts and local handoff files are not staged or committed.
+Historical research entry point: `python scripts/model_experiment.py --help`.
+Use `scripts/build_model.py` to reproduce the frozen recipe without another holdout evaluation.
+Generated artifacts stay local.
 
-Next: implement phase 4 serving and verify Python 3.11 through the container runtime.
+See [API verification](api.md) for serving behavior and Python 3.11 container checks.
 The demographic tradeoff and capacity drift remain documented limitations of the frozen model.

@@ -1,13 +1,13 @@
-# Phase 2 baseline results
+# Baseline evaluation
 
 All results: **synthetic data**, seed `20261028`, validation only.
-Runtime: Python 3.13.0, scikit-learn 1.6.1. Python 3.11 verification remains pending.
+Runtime: Python 3.13.0, scikit-learn 1.6.1. These figures record the original training runtime; CI verifies Python 3.11.
 
 ## Data and selection
 
 Train: 79,329 original claims, 977 unavailable at cutoff, 78,352 eligible.
 Validation: 15,555 original claims, 955 unavailable at cutoff, 14,600 eligible.
-Test is not evaluated or used for model/threshold selection in this phase.
+Test is not evaluated or used for model/threshold selection in this baseline experiment.
 Class labels are assumed available at cutoff because label-maturity timestamps are absent.
 The raw data is not modified; precomputed feature and truth tables are not read by training.
 
@@ -30,7 +30,7 @@ leave capacity unused when adding lower-score claims brings no additional positi
 Test/production review volumes may differ because thresholds are frozen.
 Scores are not certified calibrated probabilities; no real-world fraud claim follows.
 
-## Verification and next phase
+## Verification
 
 Seven behavioral tests pass: history time/window boundaries, threshold tie handling
 and exhaustive selection parity, train-fitted clipping and feature allowlisting,
@@ -39,5 +39,5 @@ and raw assembly with duplicate/cutoff/label-independence checks.
 The full-data training command completed without convergence failure.
 The saved trained bundle also passed reload prediction parity and feature checks.
 
-Phase 3 compares gradient boosting and demographic feature sets, freezes the winning
-configuration on validation, then performs final test and drift/error analysis.
+See [model selection](model-selection.md) for the gradient boosting comparison,
+frozen configuration, and historical test/error analysis.

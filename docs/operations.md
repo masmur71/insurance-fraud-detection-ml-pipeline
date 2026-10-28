@@ -16,12 +16,12 @@ increment the HTTP counter once and successful prediction counters per claim.
 The benchmark writes `reports/batch-benchmark.json`, including model hash, raw
 round times, median latency, and aggregate throughput. It uses synthetic example
 inputs and performs no holdout evaluation. Run both modes against the same server
-and artifact. See [batch behavior and measured results](phase-7-batch.md).
+and artifact. See [batch behavior and measured results](batch-prediction.md).
 
 ## Release path
 
 The GitHub Actions workflow tests Python 3.11, generates synthetic raw data, audits
-it, builds the fixed phase 3 recipe, builds the Docker image, and checks HTTP/pipeline
+it, builds the frozen model recipe, builds the Docker image, and checks HTTP/pipeline
 parity. Pull requests run checks without publication. Successful `main` runs publish
 the tested image to `ghcr.io/masmur71/insurance-fraud-detection-ml-pipeline` with both
 the full commit SHA and `latest`. No cloud hosting or paid service is required.
@@ -92,7 +92,7 @@ the verified serving requirements and a trusted model. Invalid requests: HTTP 42
 with field locations/messages. Repeated 5xx: inspect container logs and roll back to
 a known image. Never load an untrusted joblib file; loading it can execute code.
 
-## Local MLflow (phase 6)
+## Local MLflow
 
 Use a separate environment for tracking when serving dependency isolation is required.
 From the repository root, activate the environment and run:
@@ -110,7 +110,7 @@ This follows the [MLflow tracking server documentation](https://mlflow.org/docs/
 In another terminal with the same environment activated:
 
 ```powershell
-python scripts/build_model.py --output-dir models/phase-6-demo --tracking-uri http://127.0.0.1:5000
+python scripts/build_model.py --output-dir models/tracking-demo --tracking-uri http://127.0.0.1:5000
 ```
 
 The `frozen-phase-3-reproduction` experiment records configuration, threshold,
@@ -126,7 +126,7 @@ the completed local artifacts. Omitting `--tracking-uri` does not import MLflow.
 For an automated Windows integration check (use a fresh output path):
 
 ```powershell
-python scripts/verify_tracking.py --output-dir models/phase-6-verification
+python scripts/verify_tracking.py --output-dir models/tracking-verification
 ```
 
 This starts a loopback server on 5056, checks run completeness and the UI response,

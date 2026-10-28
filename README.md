@@ -115,7 +115,7 @@ On the **synthetic validation data**, the selected model flagged about **5% of c
 
 On the separate test data, the same fixed cutoff flagged **7.43% of claims**, above the intended 5% review workload. This illustrates a practical issue: the number of claims needing review can change even when the model stays the same.
 
-These are historical experiment results, not new measurements or evidence of real-world performance. The reserved test set has already been used and must not be reused for tuning. For the full results and limitations, read the [model card](docs/model-card.md) and [model analysis](docs/phase-3-models.md).
+These are historical experiment results, not new measurements or evidence of real-world performance. The reserved test set has already been used and must not be reused for tuning. For the full results and limitations, read the [model card](docs/model-card.md) and [model analysis](docs/model-selection.md).
 
 ## Checks and model tracking
 
@@ -133,12 +133,12 @@ With the API running, check that it agrees with the local model file:
 
 The smoke check covers individual and batch predictions. It needs the same model file as the running service. GitHub Actions also runs tests, builds the model and Docker image, and checks the API before publishing an image.
 
-Optional MLflow tracking records how a model was built and keeps a copy of its model file and report. See the [setup instructions](docs/operations.md#local-mlflow-phase-6). MLflow is not needed to serve predictions.
+Optional MLflow tracking records how a model was built and keeps a copy of its model file and report. See the [setup instructions](docs/operations.md#local-mlflow). MLflow is not needed to serve predictions.
 
 ## Further reading
 
 - [Operations guide](docs/operations.md): Docker, deployment, monitoring, and MLflow setup.
-- [Batch API and benchmark](docs/phase-7-batch.md): batch behavior and measured performance.
+- [Batch API and benchmark](docs/batch-prediction.md): batch behavior and measured performance.
 - [Model card](docs/model-card.md): intended use, results, and limitations.
 - [Feature contract](docs/feature-contract.md): expected inputs and history rules.
 

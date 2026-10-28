@@ -42,5 +42,5 @@ labels and cannot measure precision/recall. Obtain suitable real data, assess su
 effects, validate label maturity and calibration, and design a new holdout before any
 real deployment. Never retune using the consumed benchmark test set.
 
-**Reproduction:** [feature contract](feature-contract.md), [full analysis](phase-3-models.md),
+**Reproduction:** [feature contract](feature-contract.md), [full analysis](model-selection.md),
 and [README](../README.md). Each API response identifies the exact artifact by SHA-256.
