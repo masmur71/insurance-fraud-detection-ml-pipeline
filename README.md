@@ -4,26 +4,94 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Data](https://img.shields.io/badge/Data-100%25%20synthetic-orange)
 
-This project uses machine learning to help a reviewer decide which vehicle insurance claims to check first. It takes claim details, returns a score, and flags claims that need human review. It supports one claim at a time or a batch of up to 100 claims.
+## Project overview
 
-The project demonstrates the full workflow: prepare data, train a model, make predictions through an API, and run the service locally with Docker.
+An end-to-end machine learning service that helps reviewers prioritize vehicle insurance claims for investigation. It prepares claim data, trains and evaluates a model, and serves scores through a tested REST API with local monitoring tools.
 
-## About the data
+**Stack:** Python · scikit-learn · FastAPI · Docker · GitHub Actions · optional MLflow
 
-**The dataset is entirely synthetic: it is generated for learning and experimentation, rather than collected from real customers or insurance claims.** For more details about the dataset, how it is generated, and its limitations, see [Synthetic Vehicle Insurance Fraud](https://github.com/masmur71/synthetic-vehicle-insurance-fraud).
+The project combines software engineering—validated APIs, batch inference, automated tests, and container delivery—with ML engineering—time-based evaluation, reproducible model builds, experiment tracking, and input drift reports.
 
-Results on this dataset do not show how well the model would detect real fraud. A review flag is a prompt for a person to investigate, never an automatic reason to reject a claim. The score is not a confirmed probability of fraud.
+**All data is synthetic.** Results do not establish real-world fraud detection performance. A review flag prompts human investigation; it must never automatically reject a claim. Scores are uncalibrated, not confirmed probabilities of fraud. See the [dataset and generator](https://github.com/masmur71/synthetic-vehicle-insurance-fraud).
 
-## What you can try
+## Architecture
 
-- Submit a claim and receive a score and review recommendation.
-- Submit 1-100 claims together and receive results in the same order.
-- View basic service health and prediction summaries.
-- Track model builds locally with the optional MLflow tools.
-- Compare new batches with training data using local JSON and HTML drift reports.
-- Run automated checks and package the API as a Docker image.
+~~~mermaid
+flowchart LR
+    subgraph Training[Local training and evaluation]
+        D[Synthetic claim data] --> P[Time-based split and preprocessing]
+        P --> B[Build frozen model recipe]
+        B --> M[Saved model artifact]
+        B -. Optional tracking .-> T[MLflow: configuration, metrics, artifacts]
+    end
+    subgraph Serving[Containerized serving]
+        M --> A[FastAPI]
+        C[Single claim or batch of 1-100] --> A
+        A --> R[Score and human review flag]
+        A --> O[Health, counters, review volume]
+    end
+    subgraph Drift[Local drift analysis]
+        E[Eligible training rows] --> F[Training reference profile]
+        M --> F
+        F --> H[JSON and HTML drift reports]
+        M --> H
+        N[New input batch] --> H
+    end
+~~~
 
-## Run locally
+Preprocessing and the estimator are saved together. Serving loads an explicitly selected model file; MLflow does not automatically promote models. Drift analysis is a separate local command and does not trigger retraining.
+
+## Engineering highlights
+
+| Capability | Implementation and evidence |
+| --- | --- |
+| Data pipeline and evaluation | Time-based splits, histories restricted to earlier available claims, and a frozen review cutoff. [Feature contract](docs/feature-contract.md) · [Model selection](docs/model-selection.md) |
+| Single and batch inference | Shared inference logic; one model call per batch; ordered results consistent with individual predictions; invalid items reject the whole batch with indexed errors. [Batch API and verification](docs/batch-prediction.md) · [API code](src/claim_fraud/api.py) |
+| Tests and container delivery | GitHub Actions runs tests, builds the model and Docker image, and checks the API before publishing to GHCR. [Workflow](.github/workflows/ci.yml) · [Tests](tests/) |
+| Reproducible model builds | Optional MLflow records configuration, validation metrics, input hashes, source revision, and model/report artifacts. Download hash parity and persistence across restart were verified locally. [Tracking setup and verification](docs/operations.md#local-mlflow) |
+| Input drift analysis | Training reference tied to the model hash; missingness, numeric, and categorical comparisons; JSON/HTML reports and explicit small-sample handling. [Drift guide](docs/data-drift.md) · [Implementation](src/claim_fraud/drift.py) |
+| Service observability | Health checks, prediction counters, and review-volume summaries. Prediction logs exclude raw claim payloads. [Operations guide](docs/operations.md#observability) |
+
+## Results
+
+### Model evaluation on synthetic data
+
+| Model and split | Average precision | Precision | Recall | Claims flagged for review |
+| --- | ---: | ---: | ---: | ---: |
+| Logistic baseline, validation | 0.1349 | 16.07% | 27.52% | 4.77% |
+| Selected boosting, validation | 0.1500 | 16.60% | 29.73% | 4.99% |
+| Selected boosting, frozen test | 0.1402 | 14.40% | 33.07% | 7.43% |
+
+The selected model is scikit-learn histogram gradient boosting, trained on **78,352 eligible claims**. Validation contains 14,600 claims; the separate test contains 55,116. Selection targeted recall within a 5% validation review workload.
+
+**Operational finding:** the same fixed cutoff increased review volume from **4.99% on validation to 7.43% on test**. A validation workload constraint does not guarantee future capacity. These are historical results; the consumed test set is excluded from subsequent tuning and build/drift demonstrations. See the [model card](docs/model-card.md) for methodology, errors, and limitations.
+
+### Batch API benchmark
+
+| Processing 100 claims | Median total time |
+| --- | ---: |
+| Sequential individual HTTP requests | 1.8592 s |
+| One batch HTTP request | 0.0240 s |
+
+Measured locally on October 29, 2026, using the same Docker container and model artifact, deterministic synthetic example claims, one warmup, and ten measured rounds per mode. The Windows client used Python 3.13; the server used Python 3.11, one worker, and one model thread. Times include serialization and loopback HTTP round trips. These describe this machine and workload, not production capacity. See [benchmark methodology](docs/batch-prediction.md#local-benchmark).
+
+## Demo preview
+
+### Trace a model build in MLflow
+
+![Actual local MLflow run showing build parameters, validation metrics, and saved artifacts](docs/assets/mlflow-run.png)
+
+Two captured views of the same retained run: the Overview tab shows configuration and validation metrics; the Artifacts tab lists the saved model and build report. This is frozen-recipe reproduction, not a new model-selection experiment. [Reproduce the tracking workflow](docs/operations.md#local-mlflow). [Screenshot provenance](docs/assets/README.md).
+
+### Inspect controlled changes in input data
+
+![Actual local drift report showing missingness, numeric-shift, and category-change indicators](docs/assets/drift-controlled-shift.png)
+
+The training-only demonstration compares 78,352 reference rows with controlled synthetic changes. It flags increased missingness in vehicle age, a numeric shift in vehicle value, and a new incident category. Flags prompt investigation; they do not prove accuracy loss. [Run the demonstration](docs/data-drift.md#try-the-demonstration).
+
+## Quick start
+
+### Build and run locally
 
 You need **Python 3.11, Git, and Docker with Linux containers**. Use PowerShell and run these commands from the project folder.
 
@@ -66,100 +134,40 @@ docker compose up -d --no-build
 
 Then open [the API page](http://localhost:8000/docs). If the image requires sign-in, see the [operations guide](docs/operations.md). The service runs locally; this repository does not provide a public API server.
 
-## Make a prediction
 
-A complete example claim is included in [examples/claim.json](examples/claim.json).
+### Make a prediction
 
-```powershell
+~~~powershell
 $payload = Get-Content examples/claim.json -Raw
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/predict -ContentType 'application/json' -Body $payload
-```
+~~~
 
-The main response fields are:
+The response includes `score`, `threshold`, `review_required`, `reason_codes`, and `model_version`. Reason codes are input checks, not explanations of the model score. See the [example response](examples/prediction.json), [input contract](docs/feature-contract.md), and [batch API](docs/batch-prediction.md) for 1–100 claims per request.
 
-| Field | What it tells you |
-| --- | --- |
-| `score` | The model's score, between 0 and 1 |
-| `threshold` | The fixed cutoff used to flag a claim |
-| `review_required` | Whether the claim should be checked by a person |
-| `reason_codes` | Simple input checks, such as a missing police report; these are not explanations of the model's score |
-| `model_version` | Identifies the exact model file used |
+### Verify and explore
 
-See [an example response](examples/prediction.json). A rebuilt model file can have a different version identifier.
-
-### Score several claims
-
-```powershell
-$claim = Get-Content examples/claim.json -Raw | ConvertFrom-Json
-$body = @{ claims = @($claim, $claim) } | ConvertTo-Json -Depth 5
-Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/predict/batch -ContentType 'application/json' -Body $body
-```
-
-A batch accepts **1-100 claims** and returns a `predictions` list in the same order. If any claim is invalid, the whole request is rejected and the error identifies the item to fix.
-
-Use the example file as your starting point: all its input fields are required, although some values may be `null`. Dates use `YYYY-MM-DD`. For detailed input rules, see the [feature contract](docs/feature-contract.md).
-
-### Available endpoints
-
-| Endpoint | Purpose |
-| --- | --- |
-| `POST /predict` | Score one claim |
-| `POST /predict/batch` | Score 1-100 claims |
-| `GET /health` | Check that the service and model are ready |
-| `GET /monitoring` | View prediction and review-volume summaries |
-| `GET /metrics` | Read counters for monitoring tools |
-| `GET /docs` | Explore the API interactively |
-
-## What the results mean
-
-On the **synthetic validation data**, the selected model flagged about **5% of claims** for review and found about **30% of the claims labelled as fraud**. About **17% of its flagged claims** had a fraud label.
-
-On the separate test data, the same fixed cutoff flagged **7.43% of claims**, above the intended 5% review workload. This illustrates a practical issue: the number of claims needing review can change even when the model stays the same.
-
-These are historical experiment results, not new measurements or evidence of real-world performance. The reserved test set has already been used and must not be reused for tuning. For the full results and limitations, read the [model card](docs/model-card.md) and [model analysis](docs/model-selection.md).
-
-## Checks and model tracking
-
-Run the automated tests:
-
-```powershell
+~~~powershell
 .venv/Scripts/python.exe -m pytest -q
-```
-
-With the API running, check that it agrees with the local model file:
-
-```powershell
+# With the API running and the same model file available locally:
 .venv/Scripts/python.exe scripts/smoke_api.py
-```
-
-The smoke check covers individual and batch predictions. It needs the same model file as the running service. GitHub Actions also runs tests, builds the model and Docker image, and checks the API before publishing an image.
-
-Optional MLflow tracking records how a model was built and keeps a copy of its model file and report. See the [setup instructions](docs/operations.md#local-mlflow). MLflow is not needed to serve predictions.
-
-## Check changes in input data
-
-With raw training data and the frozen model already available:
-
-```powershell
+# With training data and the frozen model available; output folder must be empty:
 .venv/Scripts/python.exe scripts/demo_drift.py
 Start-Process reports/drift-demo/controlled-shift/drift-report.html
-```
+~~~
 
-This creates a training reference and compares identical inputs with controlled
-synthetic changes. It reads no consumed holdout rows. The JSON and standalone HTML
-show changes in missing values, numeric averages, and category frequencies.
-Fewer than 100 rows produce statistics without an overall drift conclusion.
-Flags prompt investigation; they do not prove accuracy loss or trigger retraining.
-See [local drift reports](docs/data-drift.md) to analyze your own Parquet batch.
+The smoke check covers individual and batch predictions. MLflow is optional and installed separately; see [tracking setup](docs/operations.md#local-mlflow).
 
-## Further reading
+## Documentation
 
-- [Operations guide](docs/operations.md): Docker, deployment, monitoring, and MLflow setup.
-- [Batch API and benchmark](docs/batch-prediction.md): batch behavior and measured performance.
-- [Local data drift](docs/data-drift.md): training reference, reports, and interpretation.
-- [Model card](docs/model-card.md): intended use, results, and limitations.
-- [Feature contract](docs/feature-contract.md): expected inputs and history rules.
+| Read next | What you will find |
+| --- | --- |
+| [Model card](docs/model-card.md) | Intended use, evaluation, errors, and limitations |
+| [Model selection](docs/model-selection.md) | Baseline comparison, selection criteria, and frozen cutoff |
+| [Feature contract](docs/feature-contract.md) | Input validation, feature definitions, and history rules |
+| [Batch API](docs/batch-prediction.md) | Request/response contract, validation, parity tests, and benchmark |
+| [Operations guide](docs/operations.md) | Docker, CI delivery, monitoring, rollback, and optional MLflow |
+| [Local data drift](docs/data-drift.md) | Reference profiles, report generation, and indicator interpretation |
 
-The main code is in `src/claim_fraud/`, runnable commands are in `scripts/`, and automated checks are in `tests/`.
+Browse [application code](src/claim_fraud/), [runnable scripts](scripts/), and [automated tests](tests/).
 
-This is a learning project. Real deployment would require real-world validation, security, fairness assessment, and a reliable source of claim histories. Monitoring here tracks scores and review volume; it cannot tell whether new predictions are correct without confirmed outcomes.
+This learning project has no cloud deployment, automatic retraining, or Model Registry promotion. Real deployment would require real-world validation, security, fairness assessment, and a reliable source of claim histories. Monitoring tracks scores and review volume; prediction correctness requires confirmed outcomes.
